@@ -4,6 +4,8 @@ from django.core.validators import (
 from django.db import models
 from django.utils import timezone
 
+from users.models import User
+
 STR_LIMIT = 21
 
 
@@ -78,8 +80,9 @@ class Title(models.Model):
 
 class Review(models.Model):
     """Модель отзыва"""
-    # author = models.ForeignKey(User, on_delete=models.CASCADE,
-    # verbose_name='Автор')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name='Автор'
+    )
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, verbose_name='Произведение'
     )
@@ -109,8 +112,9 @@ class Review(models.Model):
 
 class Comment(models.Model):
     """Модель комментария"""
-    # author = models.ForeignKey(User, on_delete=models.CASCADE,
-    # verbose_name='Автор')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name='Автор'
+    )
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, verbose_name='Отзыв'
     )

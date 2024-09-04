@@ -5,12 +5,12 @@ from rest_framework import viewsets
 
 from api.filters import TitleFilter
 from api.serializers import (
-    CategorySerializer, GenreSerializer, ReviewSerializer, TitleReadSerializer,
-    TitleSerializer
+    CategorySerializer, CommentSerializer, GenreSerializer, ReviewSerializer,
+    TitleReadSerializer, TitleSerializer
 )
-from api.permissions import AdminOrReadOnly, AdminModeratorAuthorOrReadOnly
+# from api.permissions import AdminOrReadOnly, AdminModeratorAuthorOrReadOnly
 from api.viewsets import CategoryGenreViewSet
-from reviews.models import Category, Genre, Title
+from reviews.models import Category, Genre, Review, Title
 
 
 class CategoryViewSet(CategoryGenreViewSet):
@@ -25,7 +25,7 @@ class GenreViewSet(CategoryGenreViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
-    permission_classes = (AdminOrReadOnly,)
+    # permission_classes = (AdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
@@ -37,7 +37,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (AdminModeratorAuthorOrReadOnly,)
+    # permission_classes = (AdminModeratorAuthorOrReadOnly,)
 
     def get_title(self):
         return get_object_or_404(Title, id=self.kwargs.get('title_id'))
@@ -47,3 +47,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    # permission_classes = (AdminModeratorAuthorOrReadOnly,)
+
+    def get_review(self):
+        return get_object_or_404(
+            Review,
+            id=self.kwargs['review_id'],
+            title=self.kwargs['title_id']
+        )
+
+    def get_queryset(self):
+        return self.get_review().comments.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
