@@ -1,22 +1,16 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, viewsets
+from rest_framework import viewsets
 
 from api.filters import TitleFilter
-from api.serializers import (CategorySerializer, GenreSerializer,
-                             ReviewSerializer, TitleReadSerializer,
-                             TitleSerializer)
+from api.serializers import (
+    CategorySerializer, GenreSerializer, ReviewSerializer, TitleReadSerializer,
+    TitleSerializer
+)
 from api.permissions import AdminOrReadOnly, AdminModeratorAuthorOrReadOnly
-
+from api.viewsets import CategoryGenreViewSet
 from reviews.models import Category, Genre, Title
-
-
-class CategoryGenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
-                           mixins.DestroyModelMixin, viewsets.GenericViewSet):
-    permission_classes = (AdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
 
 
 class CategoryViewSet(CategoryGenreViewSet):
@@ -49,9 +43,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Title, id=self.kwargs.get('title_id'))
 
     def get_queryset(self):
-        title = self.get_title()
-        return title.reviews.all()
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        title = self.get_title()
-        serializer.save(author=self.request.user, title=title)
+        serializer.save(author=self.request.user, title=self.get_title())

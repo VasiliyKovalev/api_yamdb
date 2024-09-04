@@ -1,5 +1,6 @@
-from django.core.validators import (MaxValueValidator, MinValueValidator,
-                                    RegexValidator)
+from django.core.validators import (
+    MaxValueValidator, MinValueValidator, RegexValidator
+)
 from django.db import models
 from django.utils import timezone
 
@@ -85,10 +86,7 @@ class Review(models.Model):
     text = models.TextField(verbose_name='Текст отзыва')
     score = models.PositiveSmallIntegerField(
         verbose_name='Оценка',
-        validators=(
-            MaxValueValidator(10),
-            MinValueValidator(1)
-        )
+        validators=(MaxValueValidator(10), MinValueValidator(1))
     )
     pub_date = models.DateTimeField(
         auto_now_add=True, verbose_name='Дата публикации'
@@ -100,8 +98,9 @@ class Review(models.Model):
         verbose_name = 'отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = [
-            models.UniqueConstraint(fields=['title', 'author'],
-                                    name='unique review')
+            models.UniqueConstraint(
+                fields=['title', 'author'], name='unique review'
+            )
         ]
 
     def __str__(self):
