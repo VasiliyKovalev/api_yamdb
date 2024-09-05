@@ -20,7 +20,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
-    rating = serializers.FloatField()
+    rating = serializers.IntegerField()
 
     class Meta:
         model = Title
@@ -50,11 +50,11 @@ class TitleSerializer(serializers.ModelSerializer):
         model = Title
         fields = (
             'id',
-            'category',
-            'genre',
             'name',
             'year',
-            'description'
+            'description',
+            'genre',
+            'category'
         )
 
     def validate_year(self, value):
@@ -74,7 +74,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ('id', 'pub_date', 'author', 'text', 'score')
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
     def validate(self, data):
         title = self.context['view'].kwargs.get('title_id')
