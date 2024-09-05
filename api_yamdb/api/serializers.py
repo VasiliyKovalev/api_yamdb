@@ -1,6 +1,8 @@
+from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from reviews.models import Category, Genre, Title, Review
+from reviews.models import Category, Comment, Genre, Title, Review
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -18,7 +20,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
-    rating = serializers.FloatField()
+    rating = serializers.IntegerField()
 
     class Meta:
         model = Title
@@ -48,12 +50,19 @@ class TitleSerializer(serializers.ModelSerializer):
         model = Title
         fields = (
             'id',
-            'category',
-            'genre',
             'name',
             'year',
-            'description'
+            'description',
+            'genre',
+            'category'
         )
+
+    def validate_year(self, value):
+        if value > timezone.now().year:
+            raise ValidationError(
+                f'Год выпуска {value} больше текущего.'
+            )
+        return value
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -65,7 +74,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ('id', 'pub_date', 'author', 'text', 'score')
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
     def validate(self, data):
         title = self.context['view'].kwargs.get('title_id')
@@ -77,3 +86,13 @@ class ReviewSerializer(serializers.ModelSerializer):
             )
         return data
 
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        slug_field='username', read_only=True,
+        default=serializers.CurrentUserDefault()
+    )
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'text', 'author', 'pub_date')
