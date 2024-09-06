@@ -1,11 +1,12 @@
 from django.urls import include, path, re_path
 
-from .views import UserDetail, UserList, UserProfile, MyTokenView
+from .views import (
+    UserDetail, UserList, UserProfile, UserObtainTokenView, RegistrationView,)
 
 
 auth_url = [
-    # path('auth/signup/', ),
-    path('token/', MyTokenView.as_view(), name='token_obtain_pair'),
+    path('signup/', RegistrationView.as_view()),
+    path('token/', UserObtainTokenView.as_view(),),
 ]
 
 users_url = [
