@@ -3,6 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Пользовательская модель User."""
     USER = 'user'
     MODERATOR = 'moderator'
     ADMIN = 'admin'
@@ -11,7 +12,7 @@ class User(AbstractUser):
         (MODERATOR, 'moderator'),
         (ADMIN, 'admin'),
     )
-    email = models.CharField('Электронная почта', max_length=254, unique=True)
+    email = models.EmailField('Электронная почта', max_length=254, unique=True)
     bio = models.TextField('Биография', blank=True)
     role = models.CharField(
         'Пользовательская роль',
@@ -19,6 +20,7 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default=USER
     )
+    confirmation_code = models.IntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [

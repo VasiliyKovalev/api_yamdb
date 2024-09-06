@@ -10,7 +10,7 @@ STR_LIMIT = 21
 
 
 class CategoryGenreModel(models.Model):
-    """Абстрактная модель для моделей категории и жанра"""
+    """Абстрактная модель для моделей категории и жанра."""
     name = models.CharField(max_length=256, verbose_name='Название')
     slug = models.SlugField(
         max_length=50,
@@ -35,7 +35,7 @@ class CategoryGenreModel(models.Model):
 
 
 class Category(CategoryGenreModel):
-    """Модель категории"""
+    """Модель категории."""
 
     class Meta:
         verbose_name = 'категория'
@@ -43,7 +43,7 @@ class Category(CategoryGenreModel):
 
 
 class Genre(CategoryGenreModel):
-    """Модель жанра"""
+    """Модель жанра."""
 
     class Meta:
         verbose_name = 'жанр'
@@ -51,7 +51,7 @@ class Genre(CategoryGenreModel):
 
 
 class Title(models.Model):
-    """Модель произведения"""
+    """Модель произведения."""
     name = models.TextField(max_length=256, verbose_name='Название')
     year = models.PositiveSmallIntegerField(
         verbose_name='Год выпуска',
@@ -79,7 +79,7 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    """Модель отзыва"""
+    """Модель отзыва."""
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Автор'
     )
@@ -111,7 +111,7 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
-    """Модель комментария"""
+    """Модель комментария."""
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Автор'
     )
