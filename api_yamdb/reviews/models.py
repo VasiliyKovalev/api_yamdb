@@ -1,61 +1,57 @@
-from django.core.validators import (
-    MaxValueValidator, MinValueValidator, RegexValidator
-)
+from django.core.validators import (MaxValueValidator, MinValueValidator)
 from django.db import models
-from django.utils import timezone
 
+from reviews.validators import year_validation
 from users.models import User
 
 STR_LIMIT = 21
+MAX_LENGTH = 256
+MIN_SCORE = 1
+MAX_SCORE = 10
 
 
 class CategoryGenreModel(models.Model):
     """Абстрактная модель для моделей категории и жанра."""
-    name = models.CharField(max_length=256, verbose_name='Название')
+    name = models.CharField(max_length=MAX_LENGTH, verbose_name='Название')
     slug = models.SlugField(
-        max_length=50,
         unique=True,
-        verbose_name='Идентификатор',
-        validators=(
-            RegexValidator(
-                regex='^[a-zA-Z0-9_-]+$',
-                message='Используйте только латиницу, цифры,'
-                        ' дефисы и знаки подчёркивания.',
-                code='invalid_slug'
-            ),
-        )
+        verbose_name='Идентификатор'
     )
 
     class Meta:
         abstract = True
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name[:STR_LIMIT]
 
 
 class Category(CategoryGenreModel):
     """Модель категории."""
 
     class Meta:
+        ordering = ('name',)
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
+
+    def __str__(self):
+        return f'Категория: {self.name[:STR_LIMIT]}'
 
 
 class Genre(CategoryGenreModel):
     """Модель жанра."""
 
     class Meta:
+        ordering = ('name',)
         verbose_name = 'жанр'
         verbose_name_plural = 'Жанры'
+
+    def __str__(self):
+        return f'Жанр: {self.name[:STR_LIMIT]}'
 
 
 class Title(models.Model):
     """Модель произведения."""
-    name = models.TextField(max_length=256, verbose_name='Название')
+    name = models.TextField(max_length=MAX_LENGTH, verbose_name='Название')
     year = models.PositiveSmallIntegerField(
         verbose_name='Год выпуска',
-        validators=(MaxValueValidator(timezone.now().year),)
+        validators=(year_validation,)
     )
     description = models.TextField(
         null=True, blank=True, verbose_name='Описание'
@@ -75,7 +71,7 @@ class Title(models.Model):
         verbose_name_plural = 'Произведения'
 
     def __str__(self):
-        return self.name[:STR_LIMIT]
+        return f'Произведение: {self.name[:STR_LIMIT]}'
 
 
 class Review(models.Model):
@@ -89,7 +85,10 @@ class Review(models.Model):
     text = models.TextField(verbose_name='Текст отзыва')
     score = models.PositiveSmallIntegerField(
         verbose_name='Оценка',
-        validators=(MaxValueValidator(10), MinValueValidator(1))
+        validators=(
+            MinValueValidator(MIN_SCORE, 'Оценка не может быть меньше 1'),
+            MaxValueValidator(MAX_SCORE, 'Оценка не может быть выше 10')
+        )
     )
     pub_date = models.DateTimeField(
         auto_now_add=True, verbose_name='Дата публикации'
@@ -107,7 +106,7 @@ class Review(models.Model):
         ]
 
     def __str__(self):
-        return self.text[:STR_LIMIT]
+        return f'Отзыв: {self.text[:STR_LIMIT]} к произведению: {self.title}'
 
 
 class Comment(models.Model):
@@ -130,4 +129,5 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.text[:STR_LIMIT]
+        return (f'Комментарий: {self.text[:STR_LIMIT]} к отзыву:'
+                f' {self.review}')
