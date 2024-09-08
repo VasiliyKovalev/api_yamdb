@@ -1,5 +1,4 @@
 from django.contrib.auth.tokens import default_token_generator
-from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
@@ -28,21 +27,15 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        username = data['username']
         email = data['email']
-
-        try:
-            user = User.objects.get(username=username, email=email)
-        except ObjectDoesNotExist:
-            serializer.save()
-            user = User.objects.get(username=username, email=email)
-        finally:
-            confirmation_code = default_token_generator.make_token(user)
-            send_confirmation_code(confirmation_code, email)
-            return Response(
-                {'username': username, 'email': email},
-                status=status.HTTP_200_OK
-            )
+        user, created = User.objects.get_or_create(
+            username=data['username'], email=email)
+        confirmation_code = default_token_generator.make_token(user)
+        send_confirmation_code(confirmation_code, email)
+        return Response(
+            data,
+            status=status.HTTP_200_OK
+        )
 
 
 class UserObtainTokenView(APIView):
