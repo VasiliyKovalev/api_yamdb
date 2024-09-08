@@ -2,11 +2,12 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
-from .utils import validate_username_not_me
+from .validators import validate_username_not_prohibited
 
 
 MAX_LENGTH_USERNAME = 150
 MAX_LENGTH_USER_ROLE = 20
+MAX_LENGTH_EMAIL = 254
 
 
 class User(AbstractUser):
@@ -19,7 +20,8 @@ class User(AbstractUser):
         'Никнейм',
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=(UnicodeUsernameValidator(), validate_username_not_me)
+        validators=(
+            UnicodeUsernameValidator(), validate_username_not_prohibited)
     )
     email = models.EmailField('Электронная почта', unique=True)
     bio = models.TextField('Биография', blank=True)
@@ -31,7 +33,7 @@ class User(AbstractUser):
     )
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('username', 'role')
         verbose_name = 'пользователь'
         verbose_name_plural = 'Пользователи'
 

@@ -2,7 +2,7 @@
 
 import django.contrib.auth.validators
 from django.db import migrations, models
-import users.utils
+import users.validators
 
 
 class Migration(migrations.Migration):
@@ -19,6 +19,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='username',
-            field=models.CharField(max_length=150, unique=True, validators=[django.contrib.auth.validators.UnicodeUsernameValidator(), users.utils.validate_username_not_me], verbose_name='Никнейм'),
+            field=models.CharField(max_length=150, unique=True, validators=[django.contrib.auth.validators.UnicodeUsernameValidator(), users.validators.validate_username_not_prohibited], verbose_name='Никнейм'),
         ),
     ]
