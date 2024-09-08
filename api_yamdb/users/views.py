@@ -1,21 +1,27 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, generics, status
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.views import APIView
 
-from api.utils import response_405_not_put
+from api.v1.permissions import IsAdminOnly
 from .models import User
-from .utils import generate_code, send_confirmation_code
-from .permissions import IsAdminOnly
+from .utils import send_confirmation_code
 from .serializers import (
     UserObtainTokenSerializer, UserSerializer,
     RegistrationSerializer, UserProfileSerializer)
 
 
 class RegistrationView(APIView):
+    """
+    Вьюсет для регистрации пользователя.
+    Высылает код подтверждения для получения токена.
+    """
     permission_classes = (AllowAny,)
 
     def post(self, request):
@@ -24,28 +30,23 @@ class RegistrationView(APIView):
         data = serializer.validated_data
         username = data['username']
         email = data['email']
-        confirmation_code = generate_code()
-        send_confirmation_code(confirmation_code, email)
-        user = User.objects.filter(username=data['username'], email=email)
-        if user.exists():
-            user.update(confirmation_code=confirmation_code)
-            return Response(data, status=status.HTTP_200_OK)
-        elif User.objects.filter(username=username).exists():
+
+        try:
+            user = User.objects.get(username=username, email=email)
+        except ObjectDoesNotExist:
+            serializer.save()
+            user = User.objects.get(username=username, email=email)
+        finally:
+            confirmation_code = default_token_generator.make_token(user)
+            send_confirmation_code(confirmation_code, email)
             return Response(
-                {'username': 'Пользователь с таким username уже существует!'},
-                status=status.HTTP_400_BAD_REQUEST)
-        elif User.objects.filter(email=email).exists():
-            return Response(
-                {'email': 'Пользователь с таким email уже существует!'},
-                status=status.HTTP_400_BAD_REQUEST)
-        else:
-            serializer.save(
-                confirmation_code=confirmation_code,
+                {'username': username, 'email': email},
+                status=status.HTTP_200_OK
             )
-            return Response(data, status=status.HTTP_200_OK)
 
 
 class UserObtainTokenView(APIView):
+    """Вьюсет для получения JWT-токена."""
     permission_classes = (AllowAny,)
 
     def post(self, request):
@@ -53,9 +54,13 @@ class UserObtainTokenView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         user = get_object_or_404(User, username=data['username'])
-        if data['confirmation_code'] != user.confirmation_code:
+        confirmation_code = data['confirmation_code']
+
+        if not default_token_generator.check_token(
+            user, confirmation_code
+        ):
             return Response(
-                {'confirmation_code': 'Неверный код подтверждения!'},
+                {'confirmation_code': ['Неверный код подтверждения!']},
                 status=status.HTTP_400_BAD_REQUEST
             )
         token = AccessToken.for_user(user)
@@ -63,31 +68,37 @@ class UserObtainTokenView(APIView):
             {'token': str(token)}, status=status.HTTP_200_OK)
 
 
-class UserList(generics.ListCreateAPIView):
+class UserViewSet(viewsets.ModelViewSet):
+    """Вьюсет для модели User."""
     queryset = User.objects.all()
-    serializer_class = UserSerializer
     permission_classes = (IsAdminOnly,)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
+    lookup_field = 'username'
+    http_method_names = ('get', 'post', 'patch', 'delete')
 
+    def get_serializer_class(self):
+        if self.request.user.is_admin():
+            return UserSerializer
+        return UserProfileSerializer
 
-class UserDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = UserSerializer
-    permission_classes = (IsAdminOnly,)
-
-    def get_object(self):
-        return get_object_or_404(User, username=self.kwargs['username'])
-
-    def put(self, request, *args, **kwargs):
-        return response_405_not_put()
-
-
-class UserProfile(generics.RetrieveUpdateAPIView):
-    serializer_class = UserProfileSerializer
-
-    def get_object(self):
-        return get_object_or_404(User, username=self.request.user.username)
-
-    def put(self, request, *args, **kwargs):
-        return response_405_not_put()
+    @action(
+        detail=False,
+        methods=('get', 'patch',),
+        url_path='me',
+        permission_classes=(IsAuthenticated,)
+    )
+    def get_me(self, request):
+        serializer_class = self.get_serializer_class()
+        if request.method == 'PATCH':
+            serializer = serializer_class(
+                request.user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = serializer_class(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

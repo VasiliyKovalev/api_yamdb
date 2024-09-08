@@ -1,7 +1,11 @@
-from django.urls import include, path, re_path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from .views import (
-    UserDetail, UserList, UserProfile, UserObtainTokenView, RegistrationView,)
+from .views import UserObtainTokenView, RegistrationView, UserViewSet
+
+
+v1_router = DefaultRouter()
+v1_router.register('users', UserViewSet, basename='users')
 
 
 auth_url = [
@@ -9,14 +13,7 @@ auth_url = [
     path('token/', UserObtainTokenView.as_view(),),
 ]
 
-users_url = [
-    path('', UserList.as_view()),
-    path('me/', UserProfile.as_view()),
-    re_path(r'(?P<username>[\w.@+-]+)/', UserDetail.as_view()),
-]
-
-
 urlpatterns = [
-    path('users/', include(users_url)),
+    path('', include(v1_router.urls)),
     path('auth/', include(auth_url)),
 ]
