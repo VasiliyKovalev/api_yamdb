@@ -7,6 +7,7 @@ from .validators import validate_username_not_prohibited
 
 MAX_LENGTH_USERNAME = 150
 MAX_LENGTH_USER_ROLE = 20
+MAX_LENGTH_EMAIL = 254
 
 
 class User(AbstractUser):
