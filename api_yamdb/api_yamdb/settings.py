@@ -16,7 +16,7 @@ SECRET_KEY = os.getenv(
 )
 
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -143,3 +143,5 @@ SIMPLE_JWT = {
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+EMAIL_HOST_USER = 'api_yamdb@example.com'
