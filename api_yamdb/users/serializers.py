@@ -2,49 +2,46 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
 
 from .models import MAX_LENGTH_USERNAME, User
-from .utils import validate_username_not_me
+from .validators import validate_username_not_prohibited
 
 
 MAX_LENGTH_EMAIL = 254
 
 
 class RegistrationSerializer(serializers.Serializer):
-    username = serializers.RegexField(
-        regex=r'^[\w.@+-]+\Z',
+    username = serializers.CharField(
         max_length=MAX_LENGTH_USERNAME,
         required=True,
-        validators=(UnicodeUsernameValidator(), validate_username_not_me),
+        validators=(
+            UnicodeUsernameValidator(), validate_username_not_prohibited),
     )
     email = serializers.EmailField(max_length=MAX_LENGTH_EMAIL, required=True)
 
     def validate(self, data):
         super().validate(data)
-        username = data['username']
-        email = data['email']
-        user = User.objects.filter(username=username, email=email)
 
-        if user.exists():
-            return data
-        elif User.objects.filter(username=username).exists():
-            raise serializers.ValidationError(
-                {'username': ['Пользователь с таким username уже существует!']}
-            )
-        elif User.objects.filter(email=email).exists():
-            raise serializers.ValidationError(
-                {'email': ['Пользователь с таким email уже существует!']}
-            )
+        user_for_email = User.objects.filter(email=data['email']).first()
+        user_for_username = User.objects.filter(
+            username=data['username']).first()
+
+        if user_for_username != user_for_email:
+            error_msg = {}
+            if user_for_username:
+                error_msg['username'] = (
+                    'Пользователь с таким username уже существует!')
+            if user_for_email:
+                error_msg['email'] = (
+                    'Пользователь с таким email уже существует!')
+            raise serializers.ValidationError(error_msg)
         return data
-
-    def create(self, validated_data):
-        return User.objects.create(**validated_data)
 
 
 class UserObtainTokenSerializer(serializers.Serializer):
-    username = serializers.RegexField(
-        regex=r'^[\w.@+-]+\Z',
+    username = serializers.CharField(
         max_length=MAX_LENGTH_USERNAME,
         required=True,
-        validators=(UnicodeUsernameValidator(), validate_username_not_me),
+        validators=(
+            UnicodeUsernameValidator(), validate_username_not_prohibited),
     )
     confirmation_code = serializers.CharField(required=True)
 
