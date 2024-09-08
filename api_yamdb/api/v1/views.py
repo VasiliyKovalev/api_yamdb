@@ -1,13 +1,13 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
+from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
 from .filters import TitleFilter
 from reviews.models import Category, Genre, Review, Title
 from .viewsets import CategoryGenreViewSet
-from users.permissions import (
+from .permissions import (
     IsAdminOrReadOnly, IsAdminModeratorAuthorOrReadOnly)
 from .serializers import (
     CategorySerializer,

@@ -5,6 +5,9 @@ from .models import MAX_LENGTH_USERNAME, User
 from .utils import validate_username_not_me
 
 
+MAX_LENGTH_EMAIL = 254
+
+
 class RegistrationSerializer(serializers.Serializer):
     username = serializers.RegexField(
         regex=r'^[\w.@+-]+\Z',
@@ -12,7 +15,7 @@ class RegistrationSerializer(serializers.Serializer):
         required=True,
         validators=(UnicodeUsernameValidator(), validate_username_not_me),
     )
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(max_length=MAX_LENGTH_EMAIL, required=True)
 
     def validate(self, data):
         super().validate(data)
@@ -24,11 +27,11 @@ class RegistrationSerializer(serializers.Serializer):
             return data
         elif User.objects.filter(username=username).exists():
             raise serializers.ValidationError(
-                {'username': 'Пользователь с таким username уже существует!'}
+                {'username': ['Пользователь с таким username уже существует!']}
             )
         elif User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
-                {'email': 'Пользователь с таким email уже существует!'}
+                {'email': ['Пользователь с таким email уже существует!']}
             )
         return data
 

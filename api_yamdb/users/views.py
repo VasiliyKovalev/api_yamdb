@@ -4,13 +4,13 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.views import APIView
 
+from api.v1.permissions import IsAdminOnly
 from .models import User
-from .permissions import IsAdminOnly
 from .utils import send_confirmation_code
 from .serializers import (
     UserObtainTokenSerializer, UserSerializer,
@@ -60,7 +60,7 @@ class UserObtainTokenView(APIView):
             user, confirmation_code
         ):
             return Response(
-                {'confirmation_code': 'Неверный код подтверждения!'},
+                {'confirmation_code': ['Неверный код подтверждения!']},
                 status=status.HTTP_400_BAD_REQUEST
             )
         token = AccessToken.for_user(user)
@@ -69,20 +69,36 @@ class UserObtainTokenView(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Вьюсет для модели User"""
+    """Вьюсет для модели User."""
     queryset = User.objects.all()
+    permission_classes = (IsAdminOnly,)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     lookup_field = 'username'
-    http_method_names = ['get', 'post', 'patch', 'delete']
+    http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_serializer_class(self):
         if self.request.user.is_admin():
             return UserSerializer
         return UserProfileSerializer
 
-    @action(detail=False, methods=['get', 'patch'])
-    def me(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+    @action(
+        detail=False,
+        methods=('get', 'patch',),
+        url_path='me',
+        permission_classes=(IsAuthenticated,)
+    )
+    def get_me(self, request):
+        serializer_class = self.get_serializer_class()
+        if request.method == 'PATCH':
+            serializer = serializer_class(
+                request.user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = serializer_class(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -4,6 +4,7 @@ from django.db import models
 from reviews.validators import year_validation
 from users.models import User
 
+
 STR_LIMIT = 21
 MAX_LENGTH = 256
 MIN_SCORE = 1
